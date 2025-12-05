@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Femboy Clicker: Ultimate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #fce7f3;
+            --color-primary: #ec4899;
+            --color-secondary: #db2777;
+            --color-accent: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: var(--color-bg);
+            color: #334155;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- Scrollbar --- */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #fbcfe8; }
+        ::-webkit-scrollbar-thumb { background: #f472b6; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ec4899; }
+
+        /* --- Animations --- */
+        .click-anim { animation: bounce 0.1s cubic-bezier(0.4, 0, 0.6, 1); }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.92); }
+        }
+
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1.2s ease-out forwards;
+            font-weight: 800;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 0 #fff;
+            z-index: 100;
+            white-space: nowrap;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.1); }
+        }
+
+        .bg-stripe {
+            background-image: linear-gradient(45deg, #fce7f3 25%, #fbcfe8 25%, #fbcfe8 50%, #fce7f3 50%, #fce7f3 75%, #fbcfe8 75%, #fbcfe8 100%);
+            background-size: 60px 60px;
+            animation: scrollBg 30s linear infinite;
+        }
+        @keyframes scrollBg {
+            0% { background-position: 0 0; }
+            100% { background-position: 60px 60px; }
+        }
+
+        .shiny-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .shiny-effect::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg) translate(-100%, -100%);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { transform: rotate(45deg) translate(-100%, -100%); }
+            20% { transform: rotate(45deg) translate(100%, 100%); }
+            100% { transform: rotate(45deg) translate(100%, 100%); }
+        }
+
+        /* --- Golden Event --- */
+        .golden-spawn {
+            position: absolute;
+            z-index: 100;
+            cursor: pointer;
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+            animation: floatAcross 18s linear forwards, wiggle 3s ease-in-out infinite;
+            transition: transform 0.1s;
+        }
+        .golden-spawn:hover { transform: scale(1.15) rotate(5deg); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 1)); }
+        .golden-spawn:active { transform: scale(0.9); }
+
+        @keyframes floatAcross { 0% { left: -150px; } 100% { left: 110vw; } }
+        @keyframes wiggle { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+
+        /* --- Frenzy Mode --- */
+        .frenzy-active .bg-stripe { filter: hue-rotate(-30deg) saturate(1.5); }
+        .frenzy-active #avatar-container { box-shadow: 0 0 50px #f59e0b, inset 0 0 20px #f59e0b; border-color: #fcd34d; }
+
+        /* --- UI Elements --- */
+        .tab-btn.active {
+            background-color: white;
+            color: #db2777;
+            border-bottom: 2px solid #db2777;
+        }
+        .tab-btn {
+            color: #94a3b8;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn:hover:not(.active) { color: #db2777; background-color: rgba(255,255,255,0.5); }
+
+        .item-card { transition: all 0.2s; }
+        .item-card:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .item-card:active:not(:disabled) { transform: translateY(-1px); }
+        
+        .achievement-locked { filter: grayscale(1) opacity(0.6); }
+        .achievement-unlocked { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: linear-gradient(135deg, #fff 0%, #fce7f3 100%); }
+        
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Tooltip */
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #334155;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 50;
+            pointer-events: none;
+            margin-bottom: 5px;
+        }
+
+        /* SVG Parts for Wardrobe */
+        .clothes-part { transition: fill 0.3s; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row relative overflow-hidden">
+
+    <!-- OVERLAYS -->
+    <div id="event-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-50"></div>
+    <div id="particle-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-40"></div>
+    
+    <!-- LEFT PANEL: CLICKER -->
+    <!-- Added overflow-y-auto to left panel to ensure footer is accessible on small screens -->
+    <div id="left-panel" class="w-full md:w-[400px] flex-shrink-0 bg-pink-50 flex flex-col items-center p-6 border-r-4 border-pink-200 relative bg-stripe z-10 shadow-xl transition-all duration-500 overflow-y-auto custom-scrollbar">
+        
+        <!-- Header / Stats -->
+        <div class="w-full bg-white/90 backdrop-blur rounded-2xl p-4 shadow-lg border border-pink-100 mb-6 relative group hover:scale-[1.02] transition-transform duration-300 flex-shrink-0">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold text-pink-400 uppercase tracking-widest">Headpats</span>
+                <span class="text-xs font-bold text-slate-400" id="version-display">v2.0 Ultimate</span>
+            </div>
+            <div class="flex items-baseline gap-2 justify-center">
+                <i data-lucide="heart" class="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse"></i>
+                <div id="currency-display" class="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">0</div>
+            </div>
+            <div class="text-center mt-2 flex justify-center items-center gap-2 bg-pink-50 rounded-lg py-1">
+                <i data-lucide="zap" class="w-3 h-3 text-orange-400"></i>
+                <span class="text-sm font-bold text-slate-600"><span id="cps-display">0.0</span> /s</span>
+            </div>
+
+            <!-- Buffs Bar -->
+            <div id="buffs-container" class="flex flex-wrap justify-center gap-1 mt-3 min-h-[20px]"></div>
+        </div>
+
+        <!-- THE CLICKER -->
+        <div class="flex-1 flex items-center justify-center w-full relative min-h-[300px] flex-shrink-0">
+            <button id="main-clicker" class="relative group focus:outline-none transition-transform duration-75">
+                <!-- Avatar Rendering Area -->
+                <div id="avatar-container" class="w-72 h-72 md:w-80 md:h-80 bg-white rounded-full border-[6px] border-pink-300 shadow-2xl flex items-center justify-center overflow-hidden relative z-20 transition-all duration-300">
+                    <!-- Dynamic SVG constructed via JS -->
+                    <svg id="avatar-svg" viewBox="0 0 200 200" class="w-full h-full drop-shadow-md">
+                        <defs>
+                            <linearGradient id="skin-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fff1f2;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ffe4e6;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Back Hair -->
+                        <g id="svg-back-hair"></g>
+                        <!-- Body Base -->
+                        <g id="svg-body">
+                             <!-- Neck -->
+                             <rect x="90" y="140" width="20" height="20" fill="url(#skin-gradient)" />
+                             <!-- Shoulders -->
+                             <path d="M50,160 Q100,150 150,160 L150,200 L50,200 Z" fill="url(#skin-gradient)" />
+                        </g>
+                        <!-- Clothes -->
+                        <g id="svg-clothes"></g>
+                        <!-- Head Base -->
+                        <g id="svg-head">
+                             <circle cx="100" cy="90" r="45" fill="url(#skin-gradient)" />
+                             <!-- Blush -->
+                             <ellipse cx="75" cy="100" rx="8" ry="4" fill="#fda4af" opacity="0.6" />
+                             <ellipse cx="125" cy="100" rx="8" ry="4" fill="#fda4af" opacity="0.6" />
+                             <!-- Eyes -->
+                             <g id="svg-eyes">
+                                 <circle cx="80" cy="90" r="6" fill="#334155" />
+                                 <circle cx="120" cy="90" r="6" fill="#334155" />
+                                 <circle cx="82" cy="88" r="2" fill="white" />
+                                 <circle cx="122" cy="88" r="2" fill="white" />
+                             </g>
+                             <!-- Mouth -->
+                             <path id="svg-mouth" d="M92,108 Q100,115 108,108" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round" />
+                        </g>
+                        <!-- Front Hair -->
+                        <g id="svg-front-hair"></g>
+                        <!-- Accessories -->
+                        <g id="svg-accessories"></g>
+                    </svg>
+                </div>
+                
+                <!-- Click Ripple Container -->
+                <div class="absolute inset-0 rounded-full border-4 border-white opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 pointer-events-none"></div>
+                <!-- Glow -->
+                <div class="absolute inset-0 bg-pink-500 rounded-full blur-[60px] opacity-0 group-hover:opacity-20 transition-opacity duration-500 -z-10"></div>
+            </button>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="w-full mt-auto pt-4 border-t border-pink-200/50 flex-shrink-0">
+            <div class="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                <span>Data: <span id="data-display" class="text-blue-500">0</span> bytes</span>
+                <span>Karma: <span id="karma-display-mini" class="text-emerald-500">0</span></span>
+            </div>
+            <div class="flex gap-2 justify-center">
+                 <button onclick="saveGame()" class="p-2 bg-white rounded-lg shadow-sm hover:bg-blue-50 text-blue-500 transition tooltip" data-tooltip="Save"><i data-lucide="save" class="w-4 h-4"></i></button>
+                 <button onclick="toggleOfflineModal()" class="p-2 bg-white rounded-lg shadow-sm hover:bg-purple-50 text-purple-500 transition tooltip" data-tooltip="Offline"><i data-lucide="moon" class="w-4 h-4"></i></button>
+                 <button onclick="toggleDevMenu()" class="p-2 bg-white rounded-lg shadow-sm hover:bg-slate-50 text-slate-500 transition tooltip" data-tooltip="Dev"><i data-lucide="terminal" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: GAME UI -->
+    <div class="flex-1 flex flex-col bg-slate-50 relative overflow-hidden">
+        
+        <!-- TABS HEADER -->
+        <div class="flex bg-white border-b border-slate-200 px-4 pt-2 gap-1 overflow-x-auto">
+            <button onclick="switchTab('store')" id="tab-store" class="tab-btn px-4 py-3 font-bold text-sm rounded-t-lg flex items-center gap-2 active">
+                <i data-lucide="shopping-bag" class="w-4 h-4"></i> Store
+            </button>
+            <button onclick="switchTab('upgrades')" id="tab-upgrades" class="tab-btn px-4 py-3 font-bold text-sm rounded-t-lg flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> Upgrades
+            </button>
+            <button onclick="switchTab('research')" id="tab-research" class="tab-btn px-4 py-3 font-bold text-sm rounded-t-lg flex items-center gap-2">
+                <i data-lucide="flask-conical" class="w-4 h-4"></i> Lab
+            </button>
+            <button onclick="switchTab('wardrobe')" id="tab-wardrobe" class="tab-btn px-4 py-3 font-bold text-sm rounded-t-lg flex items-center gap-2">
+                <i data-lucide="shirt" class="w-4 h-4"></i> Wardrobe
+            </button>
+            <button onclick="switchTab('achievements')" id="tab-achievements" class="tab-btn px-4 py-3 font-bold text-sm rounded-t-lg flex items-center gap-2">
+                <i data-lucide="trophy" class="w-4 h-4"></i> Awards
+            </button>
+             <button onclick="switchTab('stats')" id="tab-stats" class="tab-btn px-4 py-3 font-bold text-sm rounded-t-lg flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Stats
+            </button>
+        </div>
+
+        <!-- CONTENT AREA -->
+        <div id="tab-content" class="flex-1 overflow-y-auto p-4 custom-scrollbar relative bg-slate-50/50">
+            
+            <!-- STORE TAB -->
+            <div id="content-store" class="tab-pane grid grid-cols-1 gap-3 max-w-3xl mx-auto">
+                <!-- Prestige Banner -->
+                <div id="prestige-banner" class="hidden mb-4 bg-gradient-to-r from-emerald-500 to-teal-400 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 opacity-20"><i data-lucide="leaf" class="w-40 h-40"></i></div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <div>
+                            <h3 class="font-bold text-xl mb-1">Touch Grass (Rebirth)</h3>
+                            <p class="text-emerald-100 text-sm opacity-90">Reset for Karma. Current Bonus: +<span id="karma-bonus-text">0</span>%</p>
+                        </div>
+                        <button onclick="openPrestigeModal()" class="px-4 py-2 bg-white text-emerald-600 font-bold rounded-lg shadow hover:scale-105 transition transform">
+                            View <i data-lucide="arrow-right" class="inline w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 mb-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <i data-lucide="users" class="w-3 h-3"></i> Employees
+                </div>
+                <div id="buildings-list" class="space-y-2"></div>
+            </div>
+
+            <!-- UPGRADES TAB -->
+            <div id="content-upgrades" class="tab-pane hidden max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="upgrades-list"></div>
+                <div id="no-upgrades-msg" class="hidden text-center py-10 text-slate-400 font-medium">All currently available upgrades purchased!</div>
+            </div>
+
+            <!-- RESEARCH TAB -->
+            <div id="content-research" class="tab-pane hidden max-w-4xl mx-auto">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-blue-800 font-bold text-lg">Research Lab</h3>
+                        <p class="text-blue-600 text-sm">Coders and Hackers generate <strong class="text-blue-800">Data</strong>. Spend it here.</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-extrabold text-blue-600 font-mono" id="lab-data-display">0</div>
+                        <div class="text-xs font-bold text-blue-400 uppercase">Bytes Available</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="research-list"></div>
+            </div>
+
+            <!-- WARDROBE TAB -->
+            <div id="content-wardrobe" class="tab-pane hidden max-w-5xl mx-auto h-full flex flex-col">
+                <div class="flex gap-4 h-full">
+                    <!-- Categories -->
+                    <div class="w-1/4 bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex flex-col gap-1">
+                        <button onclick="renderWardrobeItems('hair')" class="p-3 text-left font-bold text-slate-600 hover:bg-pink-50 rounded-lg transition text-sm">Hair Style</button>
+                        <button onclick="renderWardrobeItems('color')" class="p-3 text-left font-bold text-slate-600 hover:bg-pink-50 rounded-lg transition text-sm">Hair Color</button>
+                        <button onclick="renderWardrobeItems('outfit')" class="p-3 text-left font-bold text-slate-600 hover:bg-pink-50 rounded-lg transition text-sm">Outfits</button>
+                        <button onclick="renderWardrobeItems('accessory')" class="p-3 text-left font-bold text-slate-600 hover:bg-pink-50 rounded-lg transition text-sm">Accessories</button>
+                    </div>
+                    <!-- Items Grid -->
+                    <div class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 p-4 overflow-y-auto">
+                        <h3 id="wardrobe-category-title" class="font-bold text-lg text-pink-500 mb-4 border-b pb-2">Select Category</h3>
+                        <div id="wardrobe-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACHIEVEMENTS TAB -->
+            <div id="content-achievements" class="tab-pane hidden max-w-4xl mx-auto">
+                <div class="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-xl border border-purple-200 mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="font-bold text-purple-700">Achievement Progress</h2>
+                        <p class="text-xs text-purple-600">Each unlock gives +2% Global Production Bonus.</p>
+                    </div>
+                    <div class="text-2xl font-bold text-purple-600"><span id="achievement-count">0</span> / <span id="achievement-total">0</span></div>
+                </div>
+                <div id="achievements-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+            </div>
+
+            <!-- STATS TAB -->
+            <div id="content-stats" class="tab-pane hidden max-w-2xl mx-auto">
+                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-slate-700 border-b pb-2">General Statistics</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="text-slate-500">Run Started:</div><div class="font-mono font-bold text-slate-700" id="stat-start"></div>
+                        <div class="text-slate-500">Total Headpats (Run):</div><div class="font-mono font-bold text-slate-700" id="stat-run-pats"></div>
+                        <div class="text-slate-500">Total Headpats (Lifetime):</div><div class="font-mono font-bold text-slate-700" id="stat-life-pats"></div>
+                        <div class="text-slate-500">Manual Clicks:</div><div class="font-mono font-bold text-slate-700" id="stat-clicks"></div>
+                        <div class="text-slate-500">Golden Objects Clicked:</div><div class="font-mono font-bold text-slate-700" id="stat-golden"></div>
+                        <div class="text-slate-500">Times Touched Grass:</div><div class="font-mono font-bold text-slate-700" id="stat-resets"></div>
+                    </div>
+                    
+                    <h3 class="font-bold text-lg text-slate-700 border-b pb-2 pt-4">Data Management</h3>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="exportSave()" class="w-full py-2 border-2 border-slate-200 rounded-lg font-bold text-slate-600 hover:bg-slate-50">Export Save to Clipboard</button>
+                        <div class="flex gap-2">
+                            <input type="text" id="import-input" placeholder="Paste save string here..." class="flex-1 border-2 border-slate-200 rounded-lg px-3 text-sm">
+                            <button onclick="importSave()" class="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600">Import</button>
+                        </div>
+                        <button onclick="hardReset()" class="w-full py-2 bg-red-50 text-red-500 border border-red-200 rounded-lg font-bold hover:bg-red-100 mt-4">HARD RESET (Delete All)</button>
+                        <!-- ADDED DEV BUTTON HERE -->
+                        <button onclick="toggleDevMenu()" class="w-full py-2 bg-slate-800 text-white border border-slate-700 rounded-lg font-bold hover:bg-slate-700 mt-2 flex items-center justify-center gap-2">
+                            <i data-lucide="terminal" class="w-4 h-4"></i> Open Developer Tools
+                        </button>
+                    </div>
+                 </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- Prestige Modal -->
+    <div id="prestige-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border-t-8 border-emerald-400 animate-bounce-in">
+            <h2 class="text-3xl font-bold text-slate-800 mb-2 flex items-center gap-2"><i data-lucide="leaf" class="text-emerald-500"></i> Touch Grass?</h2>
+            <p class="text-slate-600 mb-6 leading-relaxed">
+                Going outside will reset your buildings, upgrades, and current headpats.
+                <br>In exchange, you will gain <strong>Karma</strong> based on your lifetime earnings.
+            </p>
+            
+            <div class="bg-emerald-50 p-6 rounded-xl border border-emerald-100 mb-6 text-center">
+                <div class="text-xs font-bold text-emerald-600 uppercase mb-2">You will receive</div>
+                <div class="text-5xl font-extrabold text-emerald-600 mb-1">+<span id="potential-karma">0</span></div>
+                <div class="text-sm font-bold text-emerald-800">Karma Points</div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('prestige-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50 transition">Cancel</button>
+                <button onclick="doRebirth()" class="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold shadow-lg hover:bg-emerald-600 hover:scale-105 transition transform">Do it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Modal -->
+    <div id="offline-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border-t-8 border-purple-400">
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Welcome Back!</h2>
+            <p class="text-slate-500 text-sm mb-4">While you were sleeping (or working), your empire grew.</p>
+            
+            <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-6 text-center">
+                <div class="text-3xl font-extrabold text-purple-600 mb-1">+<span id="offline-gains">0</span></div>
+                <div class="text-xs font-bold text-purple-400 uppercase">Headpats Earned</div>
+                <div class="text-xs text-slate-400 mt-2">Time Away: <span id="offline-time">0s</span></div>
+            </div>
+            
+            <button onclick="document.getElementById('offline-modal').classList.add('hidden')" class="w-full py-3 rounded-xl bg-purple-500 text-white font-bold shadow hover:bg-purple-600 transition">Awesome!</button>
+        </div>
+    </div>
+
+    <!-- Dev Menu -->
+    <div id="dev-menu" class="hidden fixed bottom-16 left-4 bg-white p-4 rounded-xl shadow-2xl border-2 border-slate-200 z-50 w-64">
+        <h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Dev Tools</h4>
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="cheatMoney()" class="p-1 bg-green-100 text-green-700 text-xs font-bold rounded">+1M Pats</button>
+            <button onclick="cheatData()" class="p-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">+1K Data</button>
+            <button onclick="spawnGoldenEvent()" class="p-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded">Gold Event</button>
+            <button onclick="state.karma+=100;updateUI()" class="p-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded">+100 Karma</button>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800/90 text-white px-6 py-3 rounded-full shadow-xl opacity-0 transition-all duration-300 pointer-events-none z-[60] font-bold text-sm flex items-center gap-2 backdrop-blur-sm">
+        <i data-lucide="info" class="w-4 h-4 text-sky-400"></i> <span id="toast-msg">Notification</span>
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        // --- CONSTANTS & DATA --- //
+        
+        // 1. BUILDINGS
+        const BUILDINGS = [
+            { id: 'friend', name: 'Online Friend', baseCost: 15, baseCPS: 0.1, desc: 'Sends supportive DMs.', icon: 'message-circle', color: 'bg-blue-100 text-blue-600' },
+            { id: 'socks', name: 'Sock Fanatic', baseCost: 100, baseCPS: 1, desc: 'Optimizes programming comfort.', icon: 'footprints', color: 'bg-pink-100 text-pink-600' },
+            { id: 'maid', name: 'Cafe Maid', baseCost: 1100, baseCPS: 8, desc: 'Serves coffee and motivation.', icon: 'coffee', color: 'bg-amber-100 text-amber-700' },
+            { id: 'cosplayer', name: 'Cosplayer', baseCost: 12000, baseCPS: 47, desc: 'Looks great in photos.', icon: 'camera', color: 'bg-purple-100 text-purple-600' },
+            { id: 'coder', name: 'Script Kiddie', baseCost: 130000, baseCPS: 260, desc: 'Generates Pats & Data.', icon: 'terminal', color: 'bg-slate-800 text-green-400', generatesData: 0.1 },
+            { id: 'streamer', name: 'Variety Streamer', baseCost: 1400000, baseCPS: 1400, desc: 'Farms chat for headpats.', icon: 'twitch', color: 'bg-violet-100 text-violet-600' },
+            { id: 'hacker', name: 'White Hat', baseCost: 20000000, baseCPS: 7800, desc: 'Hacks mainframes for Pats.', icon: 'shield', color: 'bg-emerald-100 text-emerald-600', generatesData: 0.5 },
+            { id: 'vtuber', name: 'Idol VTuber', baseCost: 330000000, baseCPS: 44000, desc: 'Global parasocial phenomenon.', icon: 'monitor-play', color: 'bg-cyan-100 text-cyan-600' },
+            { id: 'ai', name: 'UwU AI Core', baseCost: 5100000000, baseCPS: 260000, desc: 'Self-replicating cuteness.', icon: 'cpu', color: 'bg-rose-100 text-rose-600', generatesData: 2.0 },
+            { id: 'quantum', name: 'Quantum Femboy', baseCost: 75000000000, baseCPS: 1600000, desc: 'Exists in a superposition of cute.', icon: 'atom', color: 'bg-indigo-100 text-indigo-600' }
+        ];
+
+        // 2. UPGRADES (A small selection of the 100+ intended structure)
+        const UPGRADES = [
+            // Click Upgrades
+            { id: 'click_1', name: 'Ergonomic Mouse', cost: 500, type: 'click', mult: 2, trigger: 100, desc: 'Clicking is 2x more effective.' },
+            { id: 'click_2', name: 'Gaming Switch', cost: 5000, type: 'click', mult: 2, trigger: 1000, desc: 'Clicking is 2x more effective.' },
+            { id: 'click_3', name: 'RGB Lighting', cost: 50000, type: 'click', mult: 2, trigger: 10000, desc: 'Clicking is 2x more effective.' },
+            
+            // Building Upgrades
+            { id: 'friend_1', name: 'Discord Nitro', cost: 1000, type: 'building', bId: 'friend', mult: 2, trigger: 10, desc: 'Friends are 2x efficient.' },
+            { id: 'friend_2', name: 'Server Boost', cost: 5000, type: 'building', bId: 'friend', mult: 2, trigger: 50, desc: 'Friends are 2x efficient.' },
+            
+            { id: 'socks_1', name: 'Striped Patterns', cost: 11000, type: 'building', bId: 'socks', mult: 2, trigger: 10, desc: 'Socks are 2x efficient.' },
+            { id: 'socks_2', name: 'Compression Tech', cost: 55000, type: 'building', bId: 'socks', mult: 2, trigger: 50, desc: 'Socks are 2x efficient.' },
+            
+            { id: 'maid_1', name: 'Cat Ears', cost: 120000, type: 'building', bId: 'maid', mult: 2, trigger: 10, desc: 'Maids are 2x efficient.' },
+            { id: 'maid_2', name: 'French Roast', cost: 600000, type: 'building', bId: 'maid', mult: 2, trigger: 50, desc: 'Maids are 2x efficient.' },
+
+            { id: 'coder_1', name: 'Mechanical Keyboard', cost: 1300000, type: 'building', bId: 'coder', mult: 2, trigger: 10, desc: 'Coders are 2x efficient.' },
+            { id: 'coder_2', name: 'StackOverflow Copilot', cost: 6500000, type: 'building', bId: 'coder', mult: 2, trigger: 50, desc: 'Coders are 2x efficient.' },
+
+            // Global/Special
+            { id: 'global_1', name: 'Energy Drink', cost: 1000000, type: 'global', mult: 1.1, trigger: 500000, desc: '+10% Global Production.' },
+            { id: 'syn_1', name: 'Pair Programming', cost: 5000000, type: 'synergy', desc: 'Friends boost Coders by 1% each.', trigger: 5 } // Logic handled in getCPS
+        ];
+
+        // 3. RESEARCH TECHS (Uses Data)
+        const RESEARCH = [
+            { id: 'res_1', name: 'Hello World', cost: 100, desc: 'Unlocks the ability to rename your save file.', effect: 'feature' },
+            { id: 'res_2', name: 'Optimized Algorithms', cost: 500, desc: '+20% Data Generation.', effect: 'data_boost' },
+            { id: 'res_3', name: 'Auto-Clicker script.py', cost: 2500, desc: 'Auto-clicks 1 time per second.', effect: 'auto_click' },
+            { id: 'res_4', name: 'Quantum Cuteness', cost: 10000, desc: 'Unlocks the "Quantum Femboy" building.', effect: 'unlock_building' },
+            { id: 'res_5', name: 'Neural Network Headpats', cost: 50000, desc: '+50% Global CPS.', effect: 'global_boost' }
+        ];
+
+        // 4. WARDROBE ITEMS
+        const COSMETICS = {
+            hair: [
+                { id: 'h_short', name: 'Short & Messy', cost: 0, unlock: 'start' },
+                { id: 'h_long', name: 'Long & Silky', cost: 100000, unlock: 'buy' },
+                { id: 'h_bob', name: 'Cute Bob', cost: 500000, unlock: 'buy' },
+                { id: 'h_ponytail', name: 'Ponytail', cost: 2000000, unlock: 'buy' }
+            ],
+            color: [
+                { id: 'c_pink', name: 'Cotton Candy', hex: '#f472b6', cost: 0, unlock: 'start' },
+                { id: 'c_black', name: 'Goth Black', hex: '#334155', cost: 50000, unlock: 'buy' },
+                { id: 'c_blonde', name: 'Sunny Blonde', hex: '#fcd34d', cost: 50000, unlock: 'buy' },
+                { id: 'c_white', name: 'Snow White', hex: '#f1f5f9', cost: 100000, unlock: 'buy' },
+                { id: 'c_blue', name: 'Electric Blue', hex: '#60a5fa', cost: 100000, unlock: 'buy' }
+            ],
+            outfit: [
+                { id: 'o_hoodie', name: 'Oversized Hoodie', cost: 0, unlock: 'start' },
+                { id: 'o_maid', name: 'Maid Dress', cost: 1000000, unlock: 'buy' },
+                { id: 'o_school', name: 'School Uniform', cost: 5000000, unlock: 'buy' },
+                { id: 'o_techwear', name: 'Techwear', cost: 25000000, unlock: 'buy' }
+            ],
+            accessory: [
+                { id: 'a_none', name: 'None', cost: 0, unlock: 'start' },
+                { id: 'a_ears', name: 'Cat Ears', cost: 250000, unlock: 'buy' },
+                { id: 'a_choker', name: 'Choker', cost: 500000, unlock: 'buy' },
+                { id: 'a_glasses', name: 'Round Glasses', cost: 1000000, unlock: 'buy' }
+            ]
+        };
+
+        // 5. ACHIEVEMENTS
+        const ACHIEVEMENTS = [
+            { id: 'ach_1', name: 'First Pat', desc: 'Click 1 time.', type: 'click', threshold: 1 },
+            { id: 'ach_2', name: 'Carpal Tunnel', desc: 'Click 1,000 times.', type: 'click', threshold: 1000 },
+            { id: 'ach_3', name: 'Millionaire', desc: 'Earn 1,000,000 total headpats.', type: 'currency', threshold: 1000000 },
+            { id: 'ach_4', name: 'Hiring Spree', desc: 'Own 50 buildings.', type: 'building_total', threshold: 50 },
+            { id: 'ach_5', name: 'Touch Grass', desc: 'Perform a reset.', type: 'reset', threshold: 1 },
+            { id: 'ach_6', name: 'Fashionista', desc: 'Unlock 5 wardrobe items.', type: 'cosmetic', threshold: 5 }
+        ];
+
+        // --- GLOBAL STATE --- //
+        
+        let state = {
+            currency: 0,
+            totalCurrency: 0,
+            data: 0,
+            totalData: 0,
+            karma: 0,
+            clickCount: 0,
+            startTime: Date.now(),
+            lastSaveTime: Date.now(),
+            buildings: {}, // { id: count }
+            upgrades: [], // [id]
+            research: [], // [id]
+            unlockedCosmetics: ['h_short', 'c_pink', 'o_hoodie', 'a_none'],
+            equipped: { hair: 'h_short', color: 'c_pink', outfit: 'o_hoodie', accessory: 'a_none' },
+            achievements: [], // [id]
+            resets: 0,
+            goldenClicks: 0
+        };
+
+        // Initialize empty counts
+        BUILDINGS.forEach(b => state.buildings[b.id] = 0);
+
+        // Runtime variables
+        let lastTick = Date.now();
+        let frenzyMult = 1;
+        let activeTab = 'store';
+        
+        // --- CORE GAME LOOP --- //
+
+        function gameLoop() {
+            const now = Date.now();
+            const dt = (now - lastTick) / 1000;
+            lastTick = now;
+
+            const cps = getCPS();
+            const dps = getDPS(); // Data per second
+
+            if (cps > 0) {
+                state.currency += cps * dt;
+                state.totalCurrency += cps * dt;
+            }
+
+            if (dps > 0) {
+                state.data += dps * dt;
+                state.totalData += dps * dt;
+            }
+            
+            // Auto Clicker Tech
+            if(state.research.includes('res_3')) {
+                state.currency += (getClickPower() * dt); // 1 click per sec equivalent
+            }
+
+            checkAchievements();
+            updateUI();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- CALCULATION LOGIC --- //
+
+        function getGlobalMult() {
+            let mult = 1;
+            // Upgrade globals
+            UPGRADES.filter(u => u.type === 'global' && state.upgrades.includes(u.id)).forEach(u => mult *= u.mult);
+            // Karma (10% per)
+            mult *= (1 + (state.karma * 0.1));
+            // Achievements (2% per)
+            mult *= (1 + (state.achievements.length * 0.02));
+            // Frenzy
+            mult *= frenzyMult;
+            // Research
+            if(state.research.includes('res_5')) mult *= 1.5;
+            return mult;
+        }
+
+        function getCPS() {
+            let cps = 0;
+            const gMult = getGlobalMult();
+
+            BUILDINGS.forEach(b => {
+                let count = state.buildings[b.id] || 0;
+                if(count === 0) return;
+                
+                let bCPS = b.baseCPS;
+                
+                // Multipliers
+                UPGRADES.filter(u => u.type === 'building' && u.bId === b.id && state.upgrades.includes(u.id)).forEach(u => bCPS *= u.mult);
+                
+                // Synergies (Hardcoded for simplicity)
+                if(b.id === 'coder' && state.upgrades.includes('syn_1')) {
+                    bCPS *= (1 + (state.buildings['friend'] * 0.01));
+                }
+
+                cps += count * bCPS;
+            });
+
+            return cps * gMult;
+        }
+
+        function getDPS() {
+            let dps = 0;
+            let mult = 1;
+            if(state.research.includes('res_2')) mult = 1.2;
+
+            BUILDINGS.forEach(b => {
+                if(b.generatesData) {
+                    dps += (state.buildings[b.id] * b.generatesData);
+                }
+            });
+            return dps * mult;
+        }
+
+        function getClickPower() {
+            let base = 1;
+            UPGRADES.filter(u => u.type === 'click' && state.upgrades.includes(u.id)).forEach(u => base *= u.mult);
+            // Base scaling with buildings
+            const totalBuildings = Object.values(state.buildings).reduce((a, b) => a + b, 0);
+            base += (totalBuildings * 0.2);
+            
+            return base * getGlobalMult();
+        }
+
+        // --- ACTIONS --- //
+
+        function doClick(e) {
+            const power = getClickPower();
+            state.currency += power;
+            state.totalCurrency += power;
+            state.clickCount++;
+            
+            // Visuals
+            spawnText(e.clientX, e.clientY, `+${formatNumber(power)}`);
+            spawnParticles(e.clientX, e.clientY);
+            
+            // Anim
+            const btn = document.getElementById('main-clicker');
+            btn.classList.remove('click-anim');
+            void btn.offsetWidth;
+            btn.classList.add('click-anim');
+        }
+
+        function buyBuilding(id) {
+            const b = BUILDINGS.find(x => x.id === id);
+            const cost = Math.floor(b.baseCost * Math.pow(1.15, state.buildings[id]));
+            if(state.currency >= cost) {
+                state.currency -= cost;
+                state.buildings[id]++;
+                renderStore(); // Refresh costs
+            }
+        }
+
+        function buyUpgrade(id) {
+            const u = UPGRADES.find(x => x.id === id);
+            if(state.currency >= u.cost) {
+                state.currency -= u.cost;
+                state.upgrades.push(id);
+                renderUpgrades();
+            }
+        }
+
+        function buyResearch(id) {
+            const r = RESEARCH.find(x => x.id === id);
+            if(state.data >= r.cost) {
+                state.data -= r.cost;
+                state.research.push(id);
+                renderResearch();
+                showToast(`Researched: ${r.name}`);
+            }
+        }
+
+        function buyCosmetic(type, id) {
+            const item = COSMETICS[type].find(x => x.id === id);
+            if(state.unlockedCosmetics.includes(id)) {
+                // Equip
+                state.equipped[type] = id;
+                drawAvatar();
+                renderWardrobeItems(type);
+                return;
+            }
+            if(state.currency >= item.cost) {
+                state.currency -= item.cost;
+                state.unlockedCosmetics.push(id);
+                state.equipped[type] = id;
+                drawAvatar();
+                renderWardrobeItems(type);
+                showToast(`Unlocked: ${item.name}`);
+            }
+        }
+
+        // --- PRESTIGE SYSTEM --- //
+
+        function openPrestigeModal() {
+            const potential = Math.floor(Math.cbrt(state.totalCurrency / 1000000));
+            const gain = Math.max(0, potential - state.karma);
+            document.getElementById('potential-karma').innerText = gain;
+            window.pendingKarma = gain;
+            document.getElementById('prestige-modal').classList.remove('hidden');
+        }
+
+        function doRebirth() {
+            if(window.pendingKarma <= 0) return;
+            
+            // Keep specific things
+            const keptAch = state.achievements;
+            const keptCosmetics = state.unlockedCosmetics;
+            const keptStats = { resets: state.resets + 1, golden: state.goldenClicks, lifePats: state.totalCurrency };
+            
+            // Reset
+            state.currency = 0;
+            state.clickCount = 0;
+            state.data = 0;
+            state.buildings = {};
+            BUILDINGS.forEach(b => state.buildings[b.id] = 0);
+            state.upgrades = [];
+            state.research = [];
+            
+            // Apply gains
+            state.karma += window.pendingKarma;
+            state.achievements = keptAch;
+            state.unlockedCosmetics = keptCosmetics;
+            state.resets = keptStats.resets;
+            state.goldenClicks = keptStats.golden;
+            
+            document.getElementById('prestige-modal').classList.add('hidden');
+            saveGame();
+            location.reload();
+        }
+
+        // --- AVATAR DRAWING (SVG MANIPULATION) --- //
+
+        function drawAvatar() {
+            const hairColorObj = COSMETICS.color.find(c => c.id === state.equipped.color);
+            const colorHex = hairColorObj ? hairColorObj.hex : '#f472b6';
+            
+            // Back Hair
+            const backHair = document.getElementById('svg-back-hair');
+            if(state.equipped.hair === 'h_long') {
+                backHair.innerHTML = `<path d="M50,80 L40,180 Q100,210 160,180 L150,80 Z" fill="${colorHex}"/>`;
+            } else if(state.equipped.hair === 'h_ponytail') {
+                backHair.innerHTML = `<path d="M140,60 Q180,80 170,160 Q160,180 150,150" fill="${colorHex}" stroke="${colorHex}" stroke-width="20"/>`;
+            } else {
+                backHair.innerHTML = '';
+            }
+
+            // Front Hair
+            const frontHair = document.getElementById('svg-front-hair');
+            const hType = state.equipped.hair;
+            if(hType === 'h_short') {
+                frontHair.innerHTML = `<path d="M40,80 C40,30 80,10 100,10 C120,10 160,30 160,80 L160,100 L140,80 L100,90 L60,80 L40,100 Z" fill="${colorHex}"/>`;
+            } else if (hType === 'h_bob') {
+                frontHair.innerHTML = `<path d="M35,80 C35,20 80,5 100,5 C120,5 165,20 165,80 L165,140 Q100,130 35,140 Z" fill="${colorHex}"/>`;
+            } else {
+                // Default/Long same top
+                frontHair.innerHTML = `<path d="M40,80 C40,30 80,10 100,10 C120,10 160,30 160,80 L160,130 L140,80 L100,90 L60,80 L40,130 Z" fill="${colorHex}"/>`;
+            }
+
+            // Clothes
+            const clothes = document.getElementById('svg-clothes');
+            const oType = state.equipped.outfit;
+            if(oType === 'o_hoodie') {
+                clothes.innerHTML = `<path d="M40,160 Q100,140 160,160 L170,200 L30,200 Z" fill="#64748b"/>
+                                     <path d="M70,160 L70,200" stroke="#475569" stroke-width="2"/>
+                                     <path d="M130,160 L130,200" stroke="#475569" stroke-width="2"/>`;
+            } else if (oType === 'o_maid') {
+                clothes.innerHTML = `<path d="M50,160 Q100,150 150,160 L160,200 L40,200 Z" fill="#1e293b"/>
+                                     <path d="M70,160 L70,200 L130,200 L130,160" fill="white"/>
+                                     <circle cx="100" cy="170" r="3" fill="#f472b6"/>`;
+            } else if (oType === 'o_school') {
+                clothes.innerHTML = `<path d="M50,160 L150,160 L150,200 L50,200 Z" fill="#fff"/>
+                                     <path d="M50,160 L100,200 L150,160" fill="#3b82f6" opacity="0.3"/>
+                                     <path d="M90,160 L100,180 L110,160 Z" fill="#ef4444"/>`;
+            } else { // Techwear
+                 clothes.innerHTML = `<path d="M40,155 L160,155 L160,200 L40,200 Z" fill="#0f172a"/>
+                                      <rect x="80" y="170" width="40" height="30" fill="#334155"/>
+                                      <circle cx="90" cy="180" r="2" fill="#0ea5e9"/>`;
+            }
+
+            // Accessories
+            const acc = document.getElementById('svg-accessories');
+            const aType = state.equipped.accessory;
+            let html = '';
+            if(aType === 'a_ears') {
+                html += `<path d="M50,60 L30,20 L80,40 Z" fill="${colorHex}"/><path d="M150,60 L170,20 L120,40 Z" fill="${colorHex}"/>`;
+            } else if (aType === 'a_glasses') {
+                html += `<circle cx="80" cy="90" r="10" stroke="#000" stroke-width="2" fill="none" opacity="0.7"/>
+                         <circle cx="120" cy="90" r="10" stroke="#000" stroke-width="2" fill="none" opacity="0.7"/>
+                         <line x1="90" y1="90" x2="110" y2="90" stroke="#000" stroke-width="2"/>`;
+            } else if (aType === 'a_choker') {
+                html += `<rect x="85" y="138" width="30" height="4" rx="2" fill="#000"/>
+                         <circle cx="100" cy="140" r="2" fill="#f472b6"/>`;
+            }
+            acc.innerHTML = html;
+        }
+
+        // --- UI RENDERING --- //
+
+        function switchTab(id) {
+            activeTab = id;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${id}`).classList.add('active');
+            
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`content-${id}`).classList.remove('hidden');
+
+            // Render specific content
+            if(id === 'store') renderStore();
+            if(id === 'upgrades') renderUpgrades();
+            if(id === 'wardrobe') renderWardrobeItems('hair'); // Default cat
+            if(id === 'research') renderResearch();
+            if(id === 'achievements') renderAchievements();
+            if(id === 'stats') renderStats();
+        }
+
+        function renderStore() {
+            const list = document.getElementById('buildings-list');
+            list.innerHTML = '';
+            
+            if(state.karma > 0) document.getElementById('prestige-banner').classList.remove('hidden');
+
+            BUILDINGS.forEach(b => {
+                const count = state.buildings[b.id];
+                const cost = Math.floor(b.baseCost * Math.pow(1.15, count));
+                const canAfford = state.currency >= cost;
+                
+                // Tech check
+                if(b.id === 'quantum' && !state.research.includes('res_4')) return;
+
+                const div = document.createElement('div');
+                div.className = `flex items-center p-3 rounded-xl border-2 transition-all cursor-pointer select-none relative overflow-hidden group ${canAfford ? 'bg-white border-slate-100 hover:border-pink-300 shadow-sm' : 'bg-slate-50 border-slate-100 opacity-60'}`;
+                if(canAfford) div.onclick = () => buyBuilding(b.id);
+
+                div.innerHTML = `
+                    <div class="w-12 h-12 ${b.color} rounded-lg flex items-center justify-center shrink-0 mr-4 shadow-inner">
+                        <i data-lucide="${b.icon}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700">${b.name}</h4>
+                            <span class="text-2xl font-bold text-slate-200 group-hover:text-pink-200 transition">${count}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-medium">${b.desc}</p>
+                        <div class="flex gap-3 mt-1 text-xs">
+                             <span class="${canAfford ? 'text-green-500 font-bold' : 'text-red-400'}"><i data-lucide="heart" class="w-3 h-3 inline"></i> ${formatNumber(cost)}</span>
+                             <span class="text-slate-400">+${formatNumber(b.baseCPS)}/s</span>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function renderUpgrades() {
+            const list = document.getElementById('upgrades-list');
+            list.innerHTML = '';
+            let count = 0;
+
+            UPGRADES.forEach(u => {
+                if(state.upgrades.includes(u.id)) return;
+                
+                // Visibility Logic
+                let visible = false;
+                if(u.trigger <= state.currency) visible = true; // Simple logic
+                // Better logic: show if within 2x cost or unlocked prereq (simplified here for brevity)
+                if(state.totalCurrency < u.trigger) return; 
+
+                count++;
+                const canAfford = state.currency >= u.cost;
+                
+                const btn = document.createElement('button');
+                btn.className = `p-3 rounded-xl border-2 text-left transition-all item-card flex flex-col h-full ${canAfford ? 'bg-white border-pink-100 hover:border-pink-300' : 'bg-slate-50 border-slate-100 opacity-70'}`;
+                if(canAfford) btn.onclick = () => buyUpgrade(u.id);
+
+                btn.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="p-1.5 bg-pink-50 rounded text-pink-500"><i data-lucide="${u.type === 'click' ? 'mouse-pointer' : 'arrow-up-circle'}" class="w-4 h-4"></i></div>
+                        <span class="text-xs font-bold ${canAfford ? 'text-green-500' : 'text-red-400'}">${formatNumber(u.cost)}</span>
+                    </div>
+                    <div class="font-bold text-slate-700 text-sm mb-1">${u.name}</div>
+                    <div class="text-[10px] text-slate-500 leading-tight">${u.desc}</div>
+                `;
+                list.appendChild(btn);
+            });
+
+            document.getElementById('no-upgrades-msg').style.display = count === 0 ? 'block' : 'none';
+            lucide.createIcons();
+        }
+
+        function renderResearch() {
+            const list = document.getElementById('research-list');
+            list.innerHTML = '';
+            
+            document.getElementById('lab-data-display').innerText = Math.floor(state.data).toLocaleString();
+
+            RESEARCH.forEach(r => {
+                if(state.research.includes(r.id)) {
+                    // Show completed?
+                    return;
+                }
+                
+                const canAfford = state.data >= r.cost;
+                const div = document.createElement('div');
+                div.className = `p-4 rounded-xl border-2 flex items-center gap-3 relative overflow-hidden group transition-all ${canAfford ? 'bg-white border-blue-200 hover:shadow-md cursor-pointer' : 'bg-slate-100 border-slate-200 opacity-80'}`;
+                if(canAfford) div.onclick = () => buyResearch(r.id);
+
+                div.innerHTML = `
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shrink-0">
+                        <i data-lucide="flask-conical"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-700 text-sm">${r.name}</h4>
+                        <p class="text-xs text-slate-500 mb-1">${r.desc}</p>
+                        <span class="text-xs font-bold ${canAfford ? 'text-blue-600' : 'text-red-400'}">${r.cost} Data</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function renderWardrobeItems(type) {
+            document.getElementById('wardrobe-category-title').innerText = type.charAt(0).toUpperCase() + type.slice(1);
+            const grid = document.getElementById('wardrobe-grid');
+            grid.innerHTML = '';
+            
+            COSMETICS[type].forEach(item => {
+                const unlocked = state.unlockedCosmetics.includes(item.id);
+                const equipped = state.equipped[type] === item.id;
+                const canAfford = state.currency >= item.cost;
+                
+                const btn = document.createElement('button');
+                btn.className = `p-2 rounded-lg border-2 flex flex-col items-center justify-center text-center transition-all h-24 ${equipped ? 'bg-pink-50 border-pink-400 ring-2 ring-pink-200' : unlocked ? 'bg-white border-slate-200 hover:border-pink-300' : 'bg-slate-50 border-slate-100'}`;
+                
+                btn.onclick = () => buyCosmetic(type, item.id);
+
+                let label = unlocked ? (equipped ? 'Equipped' : 'Equip') : formatNumber(item.cost);
+                
+                btn.innerHTML = `
+                    <div class="font-bold text-xs text-slate-700 mb-1">${item.name}</div>
+                    <div class="mt-auto text-[10px] font-bold px-2 py-0.5 rounded ${equipped ? 'bg-pink-500 text-white' : unlocked ? 'bg-slate-200 text-slate-600' : (canAfford ? 'bg-green-100 text-green-600' : 'bg-red-50 text-red-400')}">
+                        ${label}
+                    </div>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function renderAchievements() {
+            const list = document.getElementById('achievements-list');
+            list.innerHTML = '';
+            let count = 0;
+            
+            ACHIEVEMENTS.forEach(a => {
+                const unlocked = state.achievements.includes(a.id);
+                if(unlocked) count++;
+                
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-lg border flex items-center gap-3 ${unlocked ? 'achievement-unlocked border-purple-300' : 'achievement-locked bg-slate-100 border-slate-200'}`;
+                div.innerHTML = `
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 ${unlocked ? 'bg-gradient-to-br from-purple-400 to-pink-500' : 'bg-slate-300'}">
+                        ${unlocked ? '<i data-lucide="check"></i>' : '?'}
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm text-slate-800">${a.name}</div>
+                        <div class="text-xs text-slate-600 leading-tight">${a.desc}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            
+            document.getElementById('achievement-count').innerText = count;
+            document.getElementById('achievement-total').innerText = ACHIEVEMENTS.length;
+            lucide.createIcons();
+        }
+        
+        function renderStats() {
+            document.getElementById('stat-start').innerText = new Date(state.startTime).toLocaleDateString();
+            document.getElementById('stat-run-pats').innerText = formatNumber(state.totalCurrency);
+            document.getElementById('stat-life-pats').innerText = formatNumber(state.totalCurrency); // Simplified logic
+            document.getElementById('stat-clicks').innerText = state.clickCount.toLocaleString();
+            document.getElementById('stat-golden').innerText = state.goldenClicks;
+            document.getElementById('stat-resets').innerText = state.resets;
+        }
+
+        function updateUI() {
+            // Header
+            document.getElementById('currency-display').innerText = formatNumber(state.currency);
+            document.getElementById('cps-display').innerText = formatNumber(getCPS());
+            document.getElementById('data-display').innerText = formatNumber(state.data);
+            document.getElementById('karma-display-mini').innerText = state.karma;
+            
+            if(state.karma > 0) document.getElementById('karma-bonus-text').innerText = (state.karma * 10).toLocaleString();
+
+            // Lazy Update for active tab
+            if(Math.random() > 0.8) {
+                if(activeTab === 'store') renderStore();
+                if(activeTab === 'upgrades') renderUpgrades();
+                if(activeTab === 'research') renderResearch();
+                if(activeTab === 'achievements') renderAchievements(); // To check for unlocks visual
+            }
+        }
+
+        // --- UTILS --- //
+
+        function formatNumber(num) {
+            if (num < 1000) return Math.floor(num).toLocaleString();
+            if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+            return Math.floor(num).toLocaleString();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.style.opacity = '1';
+            t.style.bottom = '50px';
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.bottom = '24px';
+            }, 3000);
+        }
+
+        function spawnParticles(x, y) {
+            for(let i=0; i<6; i++) {
+                const p = document.createElement('div');
+                p.className = 'absolute w-2 h-2 bg-pink-400 rounded-full pointer-events-none transition-all duration-700';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                document.getElementById('particle-layer').appendChild(p);
+                
+                // Random drift
+                const tx = (Math.random() - 0.5) * 100;
+                const ty = (Math.random() - 0.5) * 100;
+                
+                setTimeout(() => {
+                    p.style.transform = `translate(${tx}px, ${ty}px) scale(0)`;
+                    p.style.opacity = '0';
+                }, 10);
+                setTimeout(() => p.remove(), 700);
+            }
+        }
+        
+        function spawnText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = text;
+            el.style.color = '#db2777';
+            el.style.left = `${x + (Math.random()*20-10)}px`;
+            el.style.top = `${y - 20}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
+
+        // --- EVENTS --- //
+
+        function scheduleNextGoldenEvent() {
+            setTimeout(spawnGoldenEvent, (Math.random() * 60000) + 30000);
+        }
+
+        function spawnGoldenEvent() {
+            const el = document.createElement('div');
+            el.className = 'golden-spawn text-5xl';
+            el.innerHTML = Math.random() > 0.5 ? '🦈' : '🥤'; // Shark or Boba
+            el.style.top = (Math.random() * 80) + 'vh';
+            
+            el.onclick = () => {
+                state.goldenClicks++;
+                triggerFrenzy();
+                el.remove();
+            };
+
+            el.addEventListener('animationend', () => { if(el.parentNode) el.remove(); scheduleNextGoldenEvent(); });
+            document.getElementById('event-layer').appendChild(el);
+        }
+
+        function triggerFrenzy() {
+            frenzyMult = 7;
+            document.getElementById('left-panel').classList.add('frenzy-active');
+            showToast("FRENZY! x7 Production!");
+            
+            setTimeout(() => {
+                frenzyMult = 1;
+                document.getElementById('left-panel').classList.remove('frenzy-active');
+                scheduleNextGoldenEvent();
+            }, 20000);
+        }
+        
+        function checkAchievements() {
+            let changed = false;
+            ACHIEVEMENTS.forEach(a => {
+                if(state.achievements.includes(a.id)) return;
+                
+                let pass = false;
+                if(a.type === 'click' && state.clickCount >= a.threshold) pass = true;
+                if(a.type === 'currency' && state.totalCurrency >= a.threshold) pass = true;
+                if(a.type === 'reset' && state.resets >= a.threshold) pass = true;
+                if(a.type === 'cosmetic' && state.unlockedCosmetics.length >= a.threshold) pass = true;
+                
+                if(a.type === 'building_total') {
+                    const count = Object.values(state.buildings).reduce((x,y) => x+y, 0);
+                    if(count >= a.threshold) pass = true;
+                }
+
+                if(pass) {
+                    state.achievements.push(a.id);
+                    showToast(`Achievement Unlocked: ${a.name}`);
+                    changed = true;
+                }
+            });
+            if(changed) updateUI();
+        }
+
+        // --- SAVE/LOAD --- //
+
+        function saveGame() {
+            state.lastSaveTime = Date.now();
+            const str = btoa(JSON.stringify(state));
+            localStorage.setItem('femboyClickerUltimate', str);
+            showToast("Game Saved");
+        }
+
+        function loadGame() {
+            const raw = localStorage.getItem('femboyClickerUltimate');
+            if(raw) {
+                try {
+                    const data = JSON.parse(atob(raw));
+                    // Merge to ensure new fields exists
+                    state = { ...state, ...data };
+                    // Handle deep merge for objects if necessary
+                    state.buildings = { ...state.buildings, ...data.buildings }; // Ensure all keys exist
+                    
+                    // Offline progress
+                    const now = Date.now();
+                    const diff = (now - state.lastSaveTime) / 1000;
+                    if(diff > 60) {
+                        const gains = getCPS() * diff * 0.5; // 50% efficiency
+                        if(gains > 0) {
+                            state.currency += gains;
+                            state.totalCurrency += gains;
+                            document.getElementById('offline-gains').innerText = formatNumber(gains);
+                            document.getElementById('offline-time').innerText = Math.floor(diff/60) + 'm';
+                            document.getElementById('offline-modal').classList.remove('hidden');
+                        }
+                    }
+                } catch(e) {
+                    console.error("Save corrupted", e);
+                }
+            }
+        }
+        
+        function exportSave() {
+            saveGame();
+            const str = localStorage.getItem('femboyClickerUltimate');
+            navigator.clipboard.writeText(str).then(() => showToast("Save exported to clipboard!"));
+        }
+
+        function importSave() {
+            const val = document.getElementById('import-input').value;
+            if(!val) return;
+            try {
+                localStorage.setItem('femboyClickerUltimate', val);
+                location.reload();
+            } catch(e) {
+                alert("Invalid Save String");
+            }
+        }
+        
+        function hardReset() {
+            if(confirm("Delete EVERYTHING?")) {
+                localStorage.removeItem('femboyClickerUltimate');
+                location.reload();
+            }
+        }
+        
+        function toggleOfflineModal() {
+            document.getElementById('offline-modal').classList.toggle('hidden');
+        }
+
+        // --- DEV --- //
+        function toggleDevMenu() { document.getElementById('dev-menu').classList.toggle('hidden'); }
+        function cheatMoney() { state.currency += 1000000; updateUI(); }
+        function cheatData() { state.data += 1000; updateUI(); }
+
+        // --- INIT --- //
+        
+        window.onload = () => {
+            loadGame();
+            
+            // Events
+            const clicker = document.getElementById('main-clicker');
+            clicker.addEventListener('mousedown', doClick);
+            clicker.addEventListener('touchstart', (e) => { e.preventDefault(); doClick(e.touches[0]); }, {passive: false});
+
+            // Initial Renders
+            drawAvatar();
+            renderStore();
+            updateUI();
+            scheduleNextGoldenEvent();
+            
+            // Auto Save
+            setInterval(saveGame, 30000);
+            
+            // Start Loop
+            gameLoop();
+        };
+
+    </script>
+</body>
+</html>
